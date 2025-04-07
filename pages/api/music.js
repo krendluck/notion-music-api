@@ -21,6 +21,16 @@ export default async function handler(req, res) {
     const { tag, search } = req.query;
     console.log("查询参数:", { tag, search });
     
+    // 首先获取数据库元数据以获取数据库名称（作为歌手名）
+    console.log("获取数据库元数据...");
+    const databaseInfo = await notion.databases.retrieve({
+      database_id: process.env.NOTION_DATABASE_ID
+    });
+
+    // 从数据库标题中提取歌手名称
+    const artist = databaseInfo.title[0]?.plain_text || "未知歌手";
+    console.log(`数据库名称 (歌手): ${artist}`);
+
     // 构建查询
     const queryParams = {
       database_id: process.env.NOTION_DATABASE_ID
@@ -66,6 +76,7 @@ export default async function handler(req, res) {
         if(song && songUrl) {
           songs.push({
             title: song,
+            artist: artist,
             url: songUrl,
             lrc: lrcUrl || null
           });
@@ -79,6 +90,7 @@ export default async function handler(req, res) {
     console.log(`成功处理 ${songs.length} 首歌曲`);
     res.status(200).json({
       name: 'Notion音乐库',
+      artist: artist,
       songs: songs
     });
   } catch (error) {
