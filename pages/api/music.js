@@ -1,13 +1,13 @@
 // filepath: api/music.js
-const { Client } = require('@notionhq/client');
+import { Client } from '@notionhq/client';
 
 // 初始化 Notion 客户端
 const notion = new Client({
   auth: process.env.NOTION_API_KEY,
 });
 
-module.exports = async (req, res) => {
-  // 允许跨域请求
+export default async function handler(req, res) {
+  // 设置 CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
   
