@@ -94,8 +94,19 @@ export default async function handler(req, res) {
     }
     
     console.log(`成功处理 ${songs.length} 首歌曲`);
+
+    // 确定合适的播放列表名称
+    let playlistName = 'Notion音乐库';
+    if (search) {
+      playlistName = `搜索: ${search}`;
+    } else if (tag) {
+      playlistName = `分类: ${tag}`;
+    } else {
+      playlistName = artist; // 使用歌手名作为默认播放列表名
+    }
+
     res.status(200).json({
-      name: 'Notion音乐库',
+      name: playlistName,
       artist: artist,
       songs: songs
     });
