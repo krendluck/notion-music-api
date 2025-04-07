@@ -1,8 +1,0 @@
-{
-    "name": "notion-music-api",
-    "version": "1.0.0",
-    "description": "Notion Music Database API",
-    "dependencies": {
-      "@notionhq/client": "^2.2.0"
-    }
-  }
