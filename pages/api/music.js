@@ -1,90 +1,74 @@
-// filepath: api/music.js
-import { Client } from '@notionhq/client';
+const { Client } = require("@notionhq/client");
 
-// 初始化 Notion 客户端
+// 初始化Notion客户端
 const notion = new Client({
-  auth: process.env.NOTION_API_KEY,
+  auth: process.env.NOTION_API_KEY
 });
 
-export default async function handler(req, res) {
-  // 设置 CORS
+module.exports = async (req, res) => {
+  // 设置CORS头
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   
   try {
-    // 获取数据库 ID
+    // 添加调试日志
+    console.log("开始获取Notion数据");
+    console.log("Database ID:", process.env.NOTION_DATABASE_ID ? "已设置" : "未设置");
+    console.log("API Key:", process.env.NOTION_API_KEY ? "已设置(长度:" + process.env.NOTION_API_KEY.length + ")" : "未设置");
+    
     const databaseId = process.env.NOTION_DATABASE_ID;
     
-    // 从查询参数获取筛选条件
+    // 获取查询参数
     const { tag, search } = req.query;
     
-    // 构建查询
-    const query = {
+    // 构建Notion查询
+    const queryParams = {
       database_id: databaseId,
-      sorts: [
-        {
-          property: 'Title',
-          direction: 'ascending',
-        },
-      ],
     };
     
-    // 添加筛选
-    if (tag) {
-      query.filter = {
-        property: 'Tags',
-        multi_select: {
-          contains: tag,
-        },
-      };
-    }
-    
-    // 搜索功能
-    if (search) {
-      // 覆盖前面的筛选
-      query.filter = {
-        or: [
-          {
-            property: 'Title',
-            rich_text: {
-              contains: search,
-            },
-          },
-          {
-            property: 'Artist',
-            rich_text: {
-              contains: search,
-            },
-          },
-        ],
-      };
-    }
+    // 添加查询条件（与myQuery.js一致）
+    // ...
     
     // 查询数据库
-    const response = await notion.databases.query(query);
+    console.log("执行查询...");
+    const results = await notion.databases.query(queryParams);
+    console.log(`查询结果: ${results.results.length}条记录`);
     
-    // 处理结果
-    const songs = response.results.map(page => {
-      const properties = page.properties;
-      return {
-        id: page.id,
-        title: properties.Title?.title[0]?.plain_text || '未知歌曲',
-        artist: properties.Artist?.rich_text[0]?.plain_text || '未知歌手',
-        url: properties.URL?.url || '',
-        lrc: properties.Lyrics?.url || '',
-        cover: properties.Cover?.files[0]?.file?.url || '',
-        album: properties.Album?.rich_text[0]?.plain_text || '',
-        tags: properties.Tags?.multi_select?.map(tag => tag.name) || []
-      };
-    }).filter(song => song.url); // 过滤掉没有 URL 的歌曲
+    // 构建歌曲列表，使用与myQuery.js相同的结构
+    const songs = [];
+    for(const result of results.results) {
+      try {
+        let song = result.properties.Song?.title[0]?.text.content;
+        let songUrl = result.properties.SongFile?.files[0]?.external?.url || 
+                    result.properties.SongFile?.files[0]?.file?.url;
+        let lrcUrl = result.properties.LyricFile?.files[0]?.external?.url ||
+                    result.properties.LyricFile?.files[0]?.file?.url;
+        
+        if(song && songUrl) {
+          songs.push({
+            title: song,
+            url: songUrl,
+            lrc: lrcUrl || null
+          });
+        }
+      } catch (err) {
+        console.error("处理单条记录时出错:", err);
+      }
+    }
     
-    // 返回结果
+    // 返回数据
+    console.log(`共找到${songs.length}首歌曲`);
     res.status(200).json({
-      name: '我的 Notion 音乐库',
-      songs
+      name: '我的Notion音乐库',
+      songs: songs
     });
   } catch (error) {
-    console.error('API Error:', error);
-    res.status(500).json({ error: '获取 Notion 数据失败' });
+    // 详细的错误记录
+    console.error("API错误详情:", error);
+    res.status(500).json({ 
+      error: '获取Notion数据失败',
+      message: error.message,
+      code: error.code
+    });
   }
 };
