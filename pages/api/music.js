@@ -54,6 +54,12 @@ export default async function handler(req, res) {
             title: {
               contains: search
             }
+          },
+          {
+            property: 'Artist',
+            rich_text: {
+              contains: search
+            }
           }
         ]
       };
